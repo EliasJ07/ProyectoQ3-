@@ -5,8 +5,8 @@ import {
   StyleSheet,
   TouchableOpacity,
 } from 'react-native';
-
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
+
 import { RootStackParamList } from '../../App';
 
 import CustomInput from '../components/CustomInput';
@@ -18,7 +18,6 @@ type Props = NativeStackScreenProps<
   RootStackParamList,
   'Login'
 >;
-
 
 export default function LoginScreen({ navigation }: Props) {
   const [email, setEmail] = useState('');
@@ -42,41 +41,45 @@ export default function LoginScreen({ navigation }: Props) {
   };
 
   const validatePassword = (value: string) => {
-  setPassword(value);
+    setPassword(value);
 
-  if (!value) {
-    setPasswordError('La contraseña es obligatoria');
-  } else if (value.length < 6) {
-    setPasswordError(
-      'La contraseña debe tener al menos 6 caracteres'
-    );
-  } else {
-    setPasswordError('');
-  }
-};
+    if (!value) {
+      setPasswordError('La contraseña es obligatoria');
+    } else if (value.length < 6) {
+      setPasswordError(
+        'La contraseña debe tener al menos 6 caracteres'
+      );
+    } else {
+      setPasswordError('');
+    }
+  };
 
-const handleLogin = () => {
-  validateEmail(email);
-  validatePassword(password);
+  const handleLogin = () => {
+    const isEmailValid =
+      email.trim() !== '' &&
+      email.includes('@') &&
+      email.includes('.');
 
-  if (
-    !email.trim() ||
-    !email.includes('@') ||
-    !email.includes('.') ||
-    !password ||
-    password.length < 6
-  ) {
-    return;
-  }
+    const isPasswordValid =
+      password !== '' &&
+      password.length >= 6;
 
-  navigation.navigate('Home');
-};
+    validateEmail(email);
+    validatePassword(password);
+
+    if (!isEmailValid || !isPasswordValid) {
+      return;
+    }
+
+    navigation.navigate('Home');
+  };
+
   return (
     <ScreenWrapper>
       <ScreenHeader
         icon="lock-closed-outline"
-        title="Bienvenido"
-        subtitle="Inicia sesión para continuar"
+        title="Iniciar sesión"
+        subtitle="Ingresa tus datos para continuar"
       />
 
       <View style={styles.form}>
@@ -98,8 +101,10 @@ const handleLogin = () => {
           error={passwordError}
         />
 
-        <TouchableOpacity style={styles.forgotContainer}>
-          <Text style={styles.forgotText}>
+        <TouchableOpacity
+          style={styles.forgotPassword}
+        >
+          <Text style={styles.forgotPasswordText}>
             ¿Olvidaste tu contraseña?
           </Text>
         </TouchableOpacity>
@@ -119,7 +124,7 @@ const handleLogin = () => {
             onPress={() => navigation.navigate('Register')}
           >
             <Text style={styles.registerLink}>
-              Regístrate
+              Crear cuenta
             </Text>
           </TouchableOpacity>
         </View>
@@ -143,15 +148,14 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 4,
   },
-  forgotContainer: {
+  forgotPassword: {
     alignSelf: 'flex-end',
-    marginTop: -4,
-    marginBottom: 15,
+    marginBottom: 20,
   },
-  forgotText: {
-    color: '#2563EB',
+  forgotPasswordText: {
     fontSize: 13,
     fontWeight: '600',
+    color: '#2563EB',
   },
   registerContainer: {
     flexDirection: 'row',
