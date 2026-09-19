@@ -41,8 +41,18 @@ export default function RegisterScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  form: { width: '100%', borderRadius: 22, padding: 22, borderWidth: StyleSheet.hairlineWidth, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.08, shadowRadius: 12, elevation: 4 },
-  loginContainer: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: 22 },
+  form: { width: '100%', 
+    borderRadius: 22, 
+    padding: 22, 
+    borderWidth: StyleSheet.hairlineWidth, 
+    shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, 
+    shadowOpacity: 0.08, 
+    shadowRadius: 12, 
+    elevation: 4 },
+  loginContainer: { flexDirection: 'row', 
+    justifyContent: 'center',
+     alignItems: 'center', 
+     marginTop: 22 },
   question: { fontSize: 14, marginRight: 5 },
   link: { fontSize: 14, fontWeight: '700' },
 });

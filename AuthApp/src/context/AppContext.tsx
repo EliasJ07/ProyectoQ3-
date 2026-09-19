@@ -1,10 +1,17 @@
-import { createContext, ReactNode, useContext, useMemo, useState } from 'react';
-
+import {
+  createContext,
+  ReactNode,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
+import { supabase } from '../lib/supabase';
+ 
 export type User = {
   id: string;
   name: string;
   email: string;
-  password: string;
 };
 
 export type Vehicle = {
@@ -34,86 +41,254 @@ type AppContextValue = {
   isAuthenticated: boolean;
   vehicles: Vehicle[];
   maintenances: Maintenance[];
-  register: (name: string, email: string, password: string) => boolean;
-  login: (email: string, password: string) => boolean;
-  logout: () => void;
-  addVehicle: (vehicle: Omit<Vehicle, 'id'>) => void;
-  updateVehicle: (id: string, vehicle: Omit<Vehicle, 'id'>) => void;
-  deleteVehicle: (id: string) => void;
-  addMaintenance: (maintenance: Omit<Maintenance, 'id'>) => void;
-  updateMaintenance: (id: string, maintenance: Omit<Maintenance, 'id'>) => void;
-  deleteMaintenance: (id: string) => void;
+
+  register: (
+    name: string,
+    email: string,
+    password: string
+  ) => Promise<boolean>;
+
+  login: (
+    email: string,
+    password: string
+  ) => Promise<boolean>;
+
+  logout: () => Promise<void>;
+
+  addVehicle: (
+    vehicle: Omit<Vehicle, 'id'>
+  ) => Promise<void>;
+
+  updateVehicle: (
+    id: string,
+    vehicle: Omit<Vehicle, 'id'>
+  ) => Promise<void>;
+
+  deleteVehicle: (
+    id: string
+  ) => Promise<void>;
+
+  addMaintenance: (
+    maintenance: Omit<Maintenance, 'id'>
+  ) => Promise<void>;
+
+  updateMaintenance: (
+    id: string,
+    maintenance: Omit<Maintenance, 'id'>
+  ) => Promise<void>;
+
+  deleteMaintenance: (
+    id: string
+  ) => Promise<void>;
 };
 
-const AppContext = createContext<AppContextValue | undefined>(undefined);
+const AppContext = createContext<AppContextValue | undefined>(
+  undefined
+);
 
-export function AppProvider({ children }: { children: ReactNode }) {
-  const [users, setUsers] = useState<User[]>([]);
+export function AppProvider({
+  children,
+}: {
+  children: ReactNode;
+}) {
   const [user, setUser] = useState<User | null>(null);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
-  const [maintenances, setMaintenances] = useState<Maintenance[]>([]);
+  const [maintenances, setMaintenances] = useState<Maintenance[]>(
+    []
+  );
 
-  const register = (name: string, email: string, password: string) => {
-    const normalizedEmail = email.trim().toLowerCase();
-    if (users.some((item) => item.email === normalizedEmail)) return false;
+  const loadProfile = async (userId: string) => {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('id, name, email')
+      .eq('id', userId)
+      .single();
 
-    const newUser: User = {
-      id: Date.now().toString(),
-      name: name.trim(),
-      email: normalizedEmail,
-      password,
+    if (error) {
+      console.error('Error cargando perfil:', error);
+      return;
+    }
+
+    if (data) {
+      setUser(data);
+    }
+  };
+
+  useEffect(() => {
+    const initializeAuth = async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (session?.user) {
+        await loadProfile(session.user.id);
+      }
     };
 
-    setUsers((current) => [...current, newUser]);
-    return true;
-  };
+    initializeAuth();
 
-  const login = (email: string, password: string) => {
-    const normalizedEmail = email.trim().toLowerCase();
-    const foundUser = users.find(
-      (item) => item.email === normalizedEmail && item.password === password
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(
+      async (_event, session) => {
+        if (session?.user) {
+          await loadProfile(session.user.id);
+        } else {
+          setUser(null);
+        }
+      }
     );
 
-    if (!foundUser) return false;
-    setUser(foundUser);
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  const register = async (
+    name: string,
+    email: string,
+    password: string
+  ): Promise<boolean> => {
+    const normalizedName = name.trim();
+    const normalizedEmail = email.trim().toLowerCase();
+
+    if (!normalizedName || !normalizedEmail || !password) {
+      return false;
+    }
+
+    const { data, error } = await supabase.auth.signUp({
+      email: normalizedEmail,
+      password,
+      options: {
+        data: {
+          name: normalizedName,
+        },
+      },
+    });
+
+    if (error) {
+      console.error('Error en registro:', error.message);
+      return false;
+    }
+
+    if (!data.user) {
+      return false;
+    }
+
     return true;
   };
 
-  const logout = () => setUser(null);
+  const login = async (
+    email: string,
+    password: string
+  ): Promise<boolean> => {
+    const normalizedEmail = email.trim().toLowerCase();
 
-  const addVehicle = (vehicle: Omit<Vehicle, 'id'>) => {
+    const { data, error } =
+      await supabase.auth.signInWithPassword({
+        email: normalizedEmail,
+        password,
+      });
+
+    //if (error) {
+      //console.error('Error en login:', error.message);
+      //return false;
+   // }
+
+    if (!data.user) {
+      return false;
+    }
+
+    await loadProfile(data.user.id);
+
+    return true;
+  };
+
+  const logout = async (): Promise<void> => {
+    const { error } = await supabase.auth.signOut();
+
+    if (error) {
+      console.error('Error cerrando sesión:', error.message);
+      return;
+    }
+
+    setUser(null);
+  };
+
+  const addVehicle = async (
+    vehicle: Omit<Vehicle, 'id'>
+  ): Promise<void> => {
     setVehicles((current) => [
       ...current,
-      { ...vehicle, id: Date.now().toString() },
+      {
+        ...vehicle,
+        id: Date.now().toString(),
+      },
     ]);
   };
 
-  const updateVehicle = (id: string, vehicle: Omit<Vehicle, 'id'>) => {
+  const updateVehicle = async (
+    id: string,
+    vehicle: Omit<Vehicle, 'id'>
+  ): Promise<void> => {
     setVehicles((current) =>
-      current.map((item) => (item.id === id ? { ...vehicle, id } : item))
+      current.map((item) =>
+        item.id === id
+          ? {
+              ...vehicle,
+              id,
+            }
+          : item
+      )
     );
   };
 
-  const deleteVehicle = (id: string) => {
-    setVehicles((current) => current.filter((item) => item.id !== id));
-    setMaintenances((current) => current.filter((item) => item.vehicleId !== id));
+  const deleteVehicle = async (
+    id: string
+  ): Promise<void> => {
+    setVehicles((current) =>
+      current.filter((item) => item.id !== id)
+    );
+
+    setMaintenances((current) =>
+      current.filter((item) => item.vehicleId !== id)
+    );
   };
 
-  const addMaintenance = (maintenance: Omit<Maintenance, 'id'>) => {
+  const addMaintenance = async (
+    maintenance: Omit<Maintenance, 'id'>
+  ): Promise<void> => {
     setMaintenances((current) => [
       ...current,
-      { ...maintenance, id: `${Date.now()}-${Math.random()}` },
+      {
+        ...maintenance,
+        id: `${Date.now()}-${Math.random()}`,
+      },
     ]);
   };
 
-  const updateMaintenance = (id: string, maintenance: Omit<Maintenance, 'id'>) => {
+  const updateMaintenance = async (
+    id: string,
+    maintenance: Omit<Maintenance, 'id'>
+  ): Promise<void> => {
     setMaintenances((current) =>
-      current.map((item) => (item.id === id ? { ...maintenance, id } : item))
+      current.map((item) =>
+        item.id === id
+          ? {
+              ...maintenance,
+              id,
+            }
+          : item
+      )
     );
   };
 
-  const deleteMaintenance = (id: string) => {
-    setMaintenances((current) => current.filter((item) => item.id !== id));
+  const deleteMaintenance = async (
+    id: string
+  ): Promise<void> => {
+    setMaintenances((current) =>
+      current.filter((item) => item.id !== id)
+    );
   };
 
   const value = useMemo(
@@ -132,14 +307,24 @@ export function AppProvider({ children }: { children: ReactNode }) {
       updateMaintenance,
       deleteMaintenance,
     }),
-    [user, vehicles, maintenances, users]
+    [user, vehicles, maintenances]
   );
 
-  return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
+  return (
+    <AppContext.Provider value={value}>
+      {children}
+    </AppContext.Provider>
+  );
 }
 
 export function useApp() {
   const context = useContext(AppContext);
-  if (!context) throw new Error('useApp debe utilizarse dentro de AppProvider');
+
+  if (!context) {
+    throw new Error(
+      'useApp debe utilizarse dentro de AppProvider'
+    );
+  }
+
   return context;
 }
