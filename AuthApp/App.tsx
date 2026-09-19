@@ -1,42 +1,29 @@
-import { NavigationContainer } from '@react-navigation/native';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/native';
+import { StatusBar } from 'expo-status-bar';
+import StackNavigator from './src/navigations/StackNavigator';
+import { AppProvider } from './src/context/AppContext';
+import { ThemeProvider, useTheme } from './src/context/ThemeContext';
 
-import LoginScreen from './src/screens/LoginScreen';
-import RegisterScreen from './src/screens/RegisterScreen';
-import HomeScreen from './src/screens/HomeScreen';
+function AppNavigation() {
+  const { theme, colors } = useTheme();
+  const navigationTheme = theme === 'dark'
+    ? { ...DarkTheme, colors: { ...DarkTheme.colors, background: colors.background, card: colors.tabBackground, text: colors.text, border: colors.border, primary: colors.primary } }
+    : { ...DefaultTheme, colors: { ...DefaultTheme.colors, background: colors.background, card: colors.tabBackground, text: colors.text, border: colors.border, primary: colors.primary } };
 
-export type RootStackParamList = {
-  Login: undefined;
-  Register: undefined;
-  Home: undefined;
-};
-
-const Stack = createNativeStackNavigator<RootStackParamList>();
+  return (
+    <NavigationContainer theme={navigationTheme}>
+      <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
+      <StackNavigator />
+    </NavigationContainer>
+  );
+}
 
 export default function App() {
   return (
-    <NavigationContainer>
-      <Stack.Navigator
-        initialRouteName="Login"
-        screenOptions={{
-          headerShown: false,
-        }}
-      >
-        <Stack.Screen
-          name="Login"
-          component={LoginScreen}
-        />
-
-        <Stack.Screen
-          name="Register"
-          component={RegisterScreen}
-        />
-
-        <Stack.Screen
-          name="Home"
-          component={HomeScreen}
-        />
-      </Stack.Navigator>
-    </NavigationContainer>
+    <AppProvider>
+      <ThemeProvider>
+        <AppNavigation />
+      </ThemeProvider>
+    </AppProvider>
   );
 }

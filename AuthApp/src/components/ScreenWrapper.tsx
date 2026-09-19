@@ -1,21 +1,11 @@
-import {
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  View,
-} from 'react-native';
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { ReactNode } from 'react';
+import { useTheme } from '../context/ThemeContext';
 
-type Props = {
-  children: ReactNode;
-  scroll?: boolean;
-};
+type Props = { children: ReactNode; scroll?: boolean };
 
-export default function ScreenWrapper({
-  children,
-  scroll = true,
-}: Props) {
+export default function ScreenWrapper({ children, scroll = true }: Props) {
+  const { colors } = useTheme();
   const content = scroll ? (
     <ScrollView
       contentContainerStyle={styles.scrollContainer}
@@ -30,7 +20,7 @@ export default function ScreenWrapper({
 
   return (
     <KeyboardAvoidingView
-      style={styles.container}
+      style={[styles.container, { backgroundColor: colors.background }]}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       {content}
@@ -39,19 +29,7 @@ export default function ScreenWrapper({
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F1F5F9',
-  },
-  scrollContainer: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    paddingHorizontal: 24,
-    paddingVertical: 35,
-  },
-  content: {
-    flex: 1,
-    paddingHorizontal: 24,
-    paddingVertical: 35,
-  },
+  container: { flex: 1 },
+  scrollContainer: { flexGrow: 1, justifyContent: 'center', paddingHorizontal: 24, paddingVertical: 35 },
+  content: { flex: 1, paddingHorizontal: 24, paddingVertical: 35 },
 });

@@ -1,0 +1,16 @@
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RootStackParamList } from '../../types/navigation';
+import { useApp } from '../../context/AppContext';
+import { useTheme } from '../../context/ThemeContext';
+import ScreenWrapper from '../../components/ScreenWrapper';
+import Card from '../../components/Card';
+import CustomButton from '../../components/CustomButton';
+
+type Props = { navigation: NativeStackNavigationProp<RootStackParamList, 'UserTabs'> };
+export default function VehiclesScreen({ navigation }: Props) {
+  const { colors } = useTheme(); const { vehicles } = useApp();
+  return <ScreenWrapper><View style={styles.header}><View><Text style={[styles.title, { color: colors.text }]}>Mis vehículos</Text><Text style={[styles.subtitle, { color: colors.secondaryText }]}>Administra tus vehículos</Text></View><Ionicons name="car-sport-outline" size={38} color={colors.primary} /></View>{vehicles.length === 0 ? <Card><Ionicons name="car-outline" size={48} color={colors.placeholder} style={styles.emptyIcon} /><Text style={[styles.emptyTitle, { color: colors.text }]}>No tienes vehículos</Text><Text style={[styles.emptyText, { color: colors.secondaryText }]}>Agrega tu primer vehículo para comenzar a registrar sus mantenimientos.</Text></Card> : vehicles.map((vehicle) => <TouchableOpacity key={vehicle.id} onPress={() => navigation.navigate('VehicleDetail', { vehicleId: vehicle.id })} activeOpacity={0.85}><Card><View style={styles.vehicleRow}><View style={[styles.vehicleIcon, { backgroundColor: colors.primarySoft }]}><Ionicons name="car-sport" size={28} color={colors.primary} /></View><View style={styles.info}><Text style={[styles.vehicleName, { color: colors.text }]}>{vehicle.name}</Text><Text style={[styles.vehicleData, { color: colors.secondaryText }]}>{vehicle.brand} {vehicle.model} · {vehicle.year}</Text><Text style={[styles.vehicleData, { color: colors.secondaryText }]}>Placa: {vehicle.plate}</Text><Text style={[styles.mileage, { color: colors.primary }]}>{vehicle.mileage.toLocaleString()} km</Text></View><Ionicons name="chevron-forward" size={22} color={colors.placeholder} /></View></Card></TouchableOpacity>)}<CustomButton title="Agregar vehículo" icon="add-outline" onPress={() => navigation.navigate('AddVehicle')} /></ScreenWrapper>;
+}
+const styles = StyleSheet.create({ header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }, title: { fontSize: 28, fontWeight: '800' }, subtitle: { fontSize: 14, marginTop: 4 }, emptyIcon: { alignSelf: 'center', marginBottom: 10 }, emptyTitle: { textAlign: 'center', fontSize: 19, fontWeight: '700' }, emptyText: { textAlign: 'center', lineHeight: 21, marginTop: 7 }, vehicleRow: { flexDirection: 'row', alignItems: 'center' }, vehicleIcon: { width: 54, height: 54, borderRadius: 27, justifyContent: 'center', alignItems: 'center', marginRight: 13 }, info: { flex: 1 }, vehicleName: { fontSize: 17, fontWeight: '800', marginBottom: 4 }, vehicleData: { fontSize: 13, marginBottom: 2 }, mileage: { fontSize: 13, fontWeight: '700', marginTop: 3 } });
